@@ -1,0 +1,853 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>羊了个羊 - 网页版</title>
+  <style>
+    :root {
+      --bg1: #f8f4e8;
+      --bg2: #d3f0d0;
+      --card-bg: #fff8e1;
+      --card-border: #d9b166;
+      --card-shadow: rgba(0, 0, 0, 0.12);
+      --accent: #f18943;
+      --slot-bg: #fff3cc;
+      --slot-border: #e7c57a;
+      --ok: #38a169;
+      --danger: #d64545;
+      --text: #3b3121;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      min-height: 100vh;
+      background: radial-gradient(circle at 20% 20%, #fffaf0 0%, var(--bg1) 40%, var(--bg2) 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 12% 14%, rgba(255, 255, 255, 0.45) 0 16%, transparent 17%),
+        radial-gradient(circle at 90% 22%, rgba(255, 255, 255, 0.42) 0 13%, transparent 14%),
+        linear-gradient(115deg, transparent 0 35%, rgba(255, 255, 255, 0.22) 48%, transparent 62%),
+        repeating-linear-gradient(
+          45deg,
+          rgba(255, 255, 255, 0.08) 0 9px,
+          rgba(255, 255, 255, 0) 9px 18px
+        );
+      z-index: 0;
+    }
+
+    .app {
+      width: min(980px, 100%);
+      padding: 16px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 14px;
+      min-height: 100vh;
+      position: relative;
+      z-index: 1;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.66);
+      border: 2px solid rgba(217, 177, 102, 0.35);
+      backdrop-filter: blur(3px);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(20px, 3.8vw, 30px);
+      letter-spacing: 1px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .level-info {
+      color: #5a4a2f;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 7px 10px;
+      border-radius: 9px;
+      border: 2px solid rgba(165, 141, 91, 0.35);
+      background: rgba(255, 249, 228, 0.86);
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+      background: var(--accent);
+      box-shadow: 0 4px 0 #d16f2f;
+      transition: transform 0.08s ease;
+    }
+
+    button:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 #d16f2f;
+    }
+
+    .board-wrap {
+      border-radius: 18px;
+      border: 3px dashed rgba(217, 177, 102, 0.75);
+      background:
+        radial-gradient(circle at 88% 12%, rgba(250, 255, 236, 0.72) 0 14%, transparent 15%),
+        radial-gradient(circle at 10% 88%, rgba(245, 255, 223, 0.58) 0 16%, transparent 17%),
+        linear-gradient(180deg, rgba(222, 242, 188, 0.88), rgba(185, 223, 154, 0.82));
+      position: relative;
+      overflow: hidden;
+      min-height: 420px;
+    }
+
+    .board-wrap::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(126, 170, 103, 0.16) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(126, 170, 103, 0.16) 1px, transparent 1px);
+      background-size: 28px 28px, 28px 28px;
+      opacity: 0.95;
+      z-index: 0;
+    }
+
+    .board-wrap::after {
+      content: "";
+      position: absolute;
+      inset: auto -40px -80px -40px;
+      height: 170px;
+      pointer-events: none;
+      background:
+        radial-gradient(130px 70px at 8% 100%, rgba(121, 183, 89, 0.36) 0 70%, transparent 71%),
+        radial-gradient(170px 80px at 34% 100%, rgba(121, 183, 89, 0.32) 0 70%, transparent 71%),
+        radial-gradient(180px 74px at 61% 100%, rgba(121, 183, 89, 0.28) 0 70%, transparent 71%),
+        radial-gradient(160px 76px at 89% 100%, rgba(121, 183, 89, 0.34) 0 70%, transparent 71%);
+      z-index: 0;
+    }
+
+    .board {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 420px;
+      z-index: 2;
+      background:
+        radial-gradient(circle at 22% 22%, rgba(255, 255, 255, 0.2) 0 10%, transparent 11%),
+        radial-gradient(circle at 70% 30%, rgba(255, 255, 255, 0.16) 0 9%, transparent 10%),
+        radial-gradient(circle at 38% 75%, rgba(125, 178, 100, 0.2) 0 10%, transparent 11%),
+        linear-gradient(180deg, rgba(194, 232, 166, 0.2), rgba(155, 201, 121, 0.2));
+    }
+
+    .board-decor {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .deco-item {
+      position: absolute;
+      line-height: 1;
+      filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.12));
+      opacity: 0.86;
+      animation: floaty 4.6s ease-in-out infinite;
+    }
+
+    .deco-cloud {
+      font-size: 36px;
+      opacity: 0.5;
+    }
+
+    .deco-flower {
+      font-size: 26px;
+      opacity: 0.62;
+    }
+
+    .deco-leaf {
+      font-size: 30px;
+      opacity: 0.56;
+    }
+
+    .deco-star {
+      font-size: 18px;
+      opacity: 0.42;
+    }
+
+    .d1 { top: 14px; left: 18px; animation-delay: -0.6s; }
+    .d2 { top: 18px; right: 24px; animation-delay: -2.2s; }
+    .d3 { bottom: 24px; left: 24px; animation-delay: -1.3s; }
+    .d4 { bottom: 26px; right: 22px; animation-delay: -0.9s; }
+    .d5 { top: 45%; left: 10px; animation-delay: -3.1s; }
+    .d6 { top: 56%; right: 14px; animation-delay: -2.7s; }
+
+    @keyframes floaty {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+
+    .tile {
+      position: absolute;
+      width: 62px;
+      height: 76px;
+      border-radius: 12px;
+      border: 2px solid var(--card-border);
+      background: var(--card-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      box-shadow: 0 4px 10px var(--card-shadow);
+      transition: transform 0.16s ease, opacity 0.16s ease, filter 0.16s ease;
+      cursor: pointer;
+    }
+
+    .tile.covered {
+      filter: grayscale(0.22) brightness(0.9);
+      cursor: not-allowed;
+    }
+
+    .tile.hint {
+      outline: 3px solid rgba(241, 137, 67, 0.9);
+      box-shadow: 0 0 0 5px rgba(255, 203, 107, 0.45), 0 6px 14px rgba(0, 0, 0, 0.18);
+      animation: pulse 0.8s ease-in-out infinite;
+    }
+
+    .tile.removing {
+      transform: scale(0.72);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-1px) scale(1.03); }
+    }
+
+    .footer {
+      display: grid;
+      gap: 8px;
+    }
+
+    .status {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 14px;
+      flex-wrap: wrap;
+    }
+
+    .message {
+      font-weight: 700;
+    }
+
+    .message.win { color: var(--ok); }
+    .message.lose { color: var(--danger); }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%) scale(0.96);
+      z-index: 30;
+      pointer-events: none;
+      max-width: min(86vw, 520px);
+      padding: 12px 16px;
+      border-radius: 12px;
+      color: #fff;
+      font-weight: 700;
+      text-align: center;
+      background: rgba(55, 46, 30, 0.84);
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.25);
+      opacity: 0;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .toast.win { background: rgba(48, 135, 87, 0.92); }
+    .toast.lose { background: rgba(188, 72, 72, 0.92); }
+
+    .slot {
+      min-height: 96px;
+      border-radius: 14px;
+      border: 3px solid var(--slot-border);
+      background: var(--slot-bg);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px;
+      overflow-x: auto;
+    }
+
+    .slot-tile {
+      flex: 0 0 auto;
+      width: 52px;
+      height: 64px;
+      border-radius: 10px;
+      border: 2px solid var(--card-border);
+      background: #fff6d8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      box-shadow: 0 2px 7px rgba(0,0,0,0.12);
+    }
+
+    .legend {
+      opacity: 0.78;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 640px) {
+      .app { padding: 10px; }
+      .tile {
+        width: 54px;
+        height: 68px;
+        font-size: 29px;
+      }
+      .board, .board-wrap { min-height: 380px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="header">
+      <h1>羊了个羊（网页版）</h1>
+      <div class="actions">
+        <span id="level-info" class="level-info">第 1 关 · 已解锁 1 关</span>
+        <button id="btn-restart">重新开始</button>
+        <button id="btn-hint">提示</button>
+        <button id="btn-assist">帮助消除</button>
+      </div>
+    </div>
+
+    <div class="board-wrap">
+      <div class="board-decor" aria-hidden="true">
+        <span class="deco-item deco-cloud d1">☁️</span>
+        <span class="deco-item deco-cloud d2">☁️</span>
+        <span class="deco-item deco-flower d3">🌼</span>
+        <span class="deco-item deco-leaf d4">🌿</span>
+        <span class="deco-item deco-star d5">✦</span>
+        <span class="deco-item deco-star d6">✦</span>
+      </div>
+      <div id="board" class="board" aria-label="游戏主棋盘"></div>
+    </div>
+
+    <div class="footer">
+      <div class="status">
+        <div>提示次数：<strong id="hint-left">1</strong></div>
+        <div>帮助消除：<strong id="assist-left">1</strong></div>
+        <div>剩余卡牌：<strong id="remain">0</strong></div>
+        <div>槽位：<strong id="slot-count">0</strong>/7</div>
+        <div id="message" class="message">点击未被遮挡的卡牌，凑齐 3 张相同图案即可消除。</div>
+      </div>
+      <div id="slot" class="slot" aria-label="槽位"></div>
+      <div class="legend">规则：上层覆盖下层时，下层卡牌不可点；槽位满 7 张判负；每局可用 1 次提示 + 1 次帮助消除；通关自动解锁下一关。</div>
+    </div>
+  </div>
+  <div id="toast" class="toast" aria-live="polite"></div>
+
+  <script>
+    const SYMBOLS = ["🐑", "🥕", "🌿", "🍎", "🌸", "🍄", "🌽", "🥬", "🍇", "🌰", "🫐", "🥔"];
+    const SLOT_LIMIT = 7;
+    const MATCH_COUNT = 3;
+    const PROGRESS_KEY = "yang-level-progress-v1";
+
+    const boardEl = document.getElementById("board");
+    const slotEl = document.getElementById("slot");
+    const levelInfoEl = document.getElementById("level-info");
+    const hintLeftEl = document.getElementById("hint-left");
+    const assistLeftEl = document.getElementById("assist-left");
+    const remainEl = document.getElementById("remain");
+    const slotCountEl = document.getElementById("slot-count");
+    const messageEl = document.getElementById("message");
+    const toastEl = document.getElementById("toast");
+    const restartBtn = document.getElementById("btn-restart");
+    const hintBtn = document.getElementById("btn-hint");
+    const assistBtn = document.getElementById("btn-assist");
+
+    let tiles = [];
+    let slot = [];
+    let state = "playing";
+    let currentLevel = 1;
+    let maxUnlockedLevel = 1;
+    let hintLeft = 1;
+    let assistLeft = 1;
+    let hintedTileIds = new Set();
+    let hintTimer = null;
+    let autoAdvanceTimer = null;
+    let toastTimer = null;
+
+    function loadProgress() {
+      try {
+        const raw = localStorage.getItem(PROGRESS_KEY);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        if (Number.isInteger(data.maxUnlockedLevel) && data.maxUnlockedLevel > 0) {
+          maxUnlockedLevel = data.maxUnlockedLevel;
+        }
+      } catch (err) {
+        // 忽略存档异常，按默认进度开始。
+      }
+    }
+
+    function saveProgress() {
+      localStorage.setItem(PROGRESS_KEY, JSON.stringify({ maxUnlockedLevel }));
+    }
+
+    function overlap(a, b) {
+      const ax2 = a.x + a.w;
+      const ay2 = a.y + a.h;
+      const bx2 = b.x + b.w;
+      const by2 = b.y + b.h;
+      return a.x < bx2 && ax2 > b.x && a.y < by2 && ay2 > b.y;
+    }
+
+    function setMessage(text, cls = "", showCenter = false) {
+      messageEl.className = "message" + (cls ? ` ${cls}` : "");
+      messageEl.textContent = text;
+      if (showCenter) showToast(text, cls);
+    }
+
+    function showToast(text, cls = "") {
+      toastEl.className = "toast" + (cls ? ` ${cls}` : "");
+      toastEl.textContent = text;
+      toastEl.classList.add("show");
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toastEl.classList.remove("show");
+      }, 1400);
+    }
+
+    function updateHud() {
+      levelInfoEl.textContent = `第 ${currentLevel} 关 · 已解锁 ${maxUnlockedLevel} 关`;
+      hintLeftEl.textContent = String(hintLeft);
+      assistLeftEl.textContent = String(assistLeft);
+      hintBtn.disabled = state !== "playing";
+      assistBtn.disabled = state !== "playing";
+    }
+
+    function buildLevelConfig(level) {
+      const safeLevel = Math.max(1, level);
+      const tileTotal = Math.min(111, 36 + (safeLevel - 1) * 9);
+      const layerCount = Math.min(6, 3 + Math.floor((safeLevel - 1) / 2));
+      const symbolPool = Math.min(SYMBOLS.length, 6 + Math.floor((safeLevel - 1) / 2));
+      const marginBase = Math.max(6, 16 - safeLevel);
+      return { tileTotal, layerCount, symbolPool, marginBase };
+    }
+
+    function buildLayerCounts(total, layerCount) {
+      const base = Math.floor(total / layerCount);
+      let rest = total % layerCount;
+      const arr = new Array(layerCount).fill(base);
+      for (let i = 0; i < layerCount; i++) {
+        if (rest > 0) {
+          arr[i]++;
+          rest--;
+        }
+      }
+      return arr;
+    }
+
+    function genDeck(tileCount, symbolPool) {
+      const count = Math.floor(tileCount / MATCH_COUNT) * MATCH_COUNT;
+      const deck = [];
+      for (let i = 0; i < count / MATCH_COUNT; i++) {
+        const sym = SYMBOLS[i % symbolPool];
+        for (let j = 0; j < MATCH_COUNT; j++) deck.push(sym);
+      }
+      for (let i = deck.length - 1; i > 0; i--) {
+        const r = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[r]] = [deck[r], deck[i]];
+      }
+      return deck;
+    }
+
+    function genLayout(level) {
+      const cfg = buildLevelConfig(level);
+      const boardWidth = boardEl.clientWidth;
+      const boardHeight = boardEl.clientHeight;
+      const tileW = window.innerWidth <= 640 ? 54 : 62;
+      const tileH = window.innerWidth <= 640 ? 68 : 76;
+      const layers = buildLayerCounts(cfg.tileTotal, cfg.layerCount);
+      const deck = genDeck(layers.reduce((a, b) => a + b, 0), cfg.symbolPool);
+      const list = [];
+
+      let idx = 0;
+      for (let z = 0; z < layers.length; z++) {
+        const n = layers[z];
+        for (let i = 0; i < n; i++) {
+          const margin = cfg.marginBase + z * 4;
+          const maxX = Math.max(margin + 1, boardWidth - tileW - margin);
+          const maxY = Math.max(margin + 1, boardHeight - tileH - margin);
+          const x = Math.floor(Math.random() * (maxX - margin)) + margin;
+          const y = Math.floor(Math.random() * (maxY - margin)) + margin;
+          list.push({
+            id: `${z}-${i}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            symbol: deck[idx++],
+            x,
+            y,
+            z,
+            w: tileW,
+            h: tileH,
+            removed: false,
+            covered: false,
+          });
+        }
+      }
+      return list;
+    }
+
+    function computeCovered() {
+      for (const t of tiles) {
+        if (t.removed) {
+          t.covered = false;
+          continue;
+        }
+        t.covered = tiles.some(other => {
+        if (other.removed) return false;
+        if (other.z <= t.z) return false;
+        return overlap(t, other);
+      });
+      if (t.covered) hintedTileIds.delete(t.id);
+    }
+    }
+
+    function getClickableTiles() {
+      computeCovered();
+      return tiles.filter(t => !t.removed && !t.covered);
+    }
+
+    function getEliminableSymbols() {
+      const slotCount = new Map();
+      for (const item of slot) {
+        slotCount.set(item.symbol, (slotCount.get(item.symbol) || 0) + 1);
+      }
+
+      const clickable = getClickableTiles();
+      const clickableMap = new Map();
+      for (const t of clickable) {
+        if (!clickableMap.has(t.symbol)) clickableMap.set(t.symbol, []);
+        clickableMap.get(t.symbol).push(t);
+      }
+
+      const candidates = [];
+      for (const [symbol, list] of clickableMap.entries()) {
+        const total = (slotCount.get(symbol) || 0) + list.length;
+        if (total >= MATCH_COUNT) {
+          candidates.push({
+            symbol,
+            slotCount: slotCount.get(symbol) || 0,
+            clickableTiles: list,
+          });
+        }
+      }
+
+      candidates.sort((a, b) => {
+        if (b.slotCount !== a.slotCount) return b.slotCount - a.slotCount;
+        return b.clickableTiles.length - a.clickableTiles.length;
+      });
+      return candidates;
+    }
+
+    function renderBoard() {
+      boardEl.innerHTML = "";
+      computeCovered();
+
+      const visible = tiles.filter(t => !t.removed).sort((a, b) => a.z - b.z);
+      for (const t of visible) {
+        const div = document.createElement("button");
+        div.className = `tile${t.covered ? " covered" : ""}${hintedTileIds.has(t.id) ? " hint" : ""}`;
+        div.style.left = `${t.x}px`;
+        div.style.top = `${t.y}px`;
+        div.style.zIndex = String(t.z + 1);
+        div.textContent = t.symbol;
+        div.disabled = t.covered || state !== "playing";
+        div.addEventListener("click", () => pickTile(t.id));
+        boardEl.appendChild(div);
+      }
+
+      remainEl.textContent = String(tiles.filter(t => !t.removed).length);
+      updateHud();
+    }
+
+    function renderSlot() {
+      slotEl.innerHTML = "";
+      slotCountEl.textContent = String(slot.length);
+      slot.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "slot-tile";
+        div.textContent = item.symbol;
+        slotEl.appendChild(div);
+      });
+    }
+
+    function applyMatch() {
+      const counts = new Map();
+      for (const item of slot) {
+        counts.set(item.symbol, (counts.get(item.symbol) || 0) + 1);
+      }
+
+      const clearSymbols = [];
+      counts.forEach((v, k) => {
+        if (v >= MATCH_COUNT) clearSymbols.push(k);
+      });
+      if (!clearSymbols.length) return false;
+
+      for (const s of clearSymbols) {
+        let removed = 0;
+        slot = slot.filter(item => {
+          if (item.symbol === s && removed < MATCH_COUNT) {
+            removed++;
+            return false;
+          }
+          return true;
+        });
+      }
+      return true;
+    }
+
+    function checkState() {
+      const left = tiles.some(t => !t.removed);
+      if (!left) {
+        state = "win";
+        const nextLevel = currentLevel + 1;
+        if (nextLevel > maxUnlockedLevel) {
+          maxUnlockedLevel = nextLevel;
+          saveProgress();
+        }
+        setMessage(`恭喜通关第 ${currentLevel} 关！正在解锁并进入第 ${nextLevel} 关...`, "win", true);
+        updateHud();
+        if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
+        autoAdvanceTimer = setTimeout(() => {
+          currentLevel = nextLevel;
+          startLevel(currentLevel);
+        }, 1100);
+        return;
+      }
+
+      if (slot.length >= SLOT_LIMIT) {
+        state = "lose";
+        setMessage(`第 ${currentLevel} 关失败：槽位满了。点“重新开始”继续挑战。`, "lose", true);
+        updateHud();
+      }
+    }
+
+    function pickTile(id) {
+      if (state !== "playing") return;
+      const tile = tiles.find(t => t.id === id);
+      if (!tile || tile.removed || tile.covered) return;
+
+      tile.removed = true;
+      slot.push({ symbol: tile.symbol });
+      hintedTileIds.clear();
+
+      const matched = applyMatch();
+      renderSlot();
+      renderBoard();
+
+      if (matched) {
+        setMessage("已触发三消，继续加油！");
+      } else {
+        setMessage("点击未被遮挡的卡牌，凑齐 3 张相同图案即可消除。");
+      }
+
+      checkState();
+      renderBoard();
+    }
+
+    function clearHintLater() {
+      if (hintTimer) clearTimeout(hintTimer);
+      hintTimer = setTimeout(() => {
+        hintedTileIds.clear();
+        renderBoard();
+      }, 1800);
+    }
+
+    function useHint() {
+      if (state !== "playing") return;
+      if (hintLeft <= 0) {
+        setMessage("提示次数已经用完。", "lose", true);
+        return;
+      }
+
+      const candidates = getEliminableSymbols();
+      if (!candidates.length) {
+        setMessage("当前没有可构成三消的明显组合，先试着打开更多上层卡牌。", "", true);
+        return;
+      }
+
+      hintLeft--;
+      const best = candidates[0];
+      hintedTileIds = new Set(best.clickableTiles.map(t => t.id));
+      setMessage(`提示：优先处理「${best.symbol}」可形成消除。`, "", true);
+      clearHintLater();
+      renderBoard();
+    }
+
+    function useAssistClear() {
+      if (state !== "playing") return;
+      if (assistLeft <= 0) {
+        setMessage("帮助消除次数已经用完。", "lose", true);
+        return;
+      }
+      if (!slot.length) {
+        setMessage("槽位为空，先选择几张卡牌后再使用帮助消除。", "", true);
+        return;
+      }
+
+      const counts = new Map();
+      for (const item of slot) {
+        counts.set(item.symbol, (counts.get(item.symbol) || 0) + 1);
+      }
+
+      // 仅按 3 张一组消除，避免留下无法三消的残牌。
+      let targetSymbol = "";
+      let fromSlotCount = 0;
+      let fromBoardCount = 0;
+
+      // 优先直接消除槽位中已凑满 3 张的图案。
+      counts.forEach((count, symbol) => {
+        if (count >= MATCH_COUNT && count > fromSlotCount) {
+          targetSymbol = symbol;
+          fromSlotCount = MATCH_COUNT;
+          fromBoardCount = 0;
+        }
+      });
+
+      // 若槽位未满 3 张，尝试从可点击区自动补齐到 3 张再消除。
+      if (!targetSymbol) {
+        const clickable = getClickableTiles();
+        const clickableCounts = new Map();
+        for (const t of clickable) {
+          clickableCounts.set(t.symbol, (clickableCounts.get(t.symbol) || 0) + 1);
+        }
+
+        counts.forEach((count, symbol) => {
+          if (count > 0 && count < MATCH_COUNT) {
+            const need = MATCH_COUNT - count;
+            const canProvide = clickableCounts.get(symbol) || 0;
+            if (canProvide >= need && count > fromSlotCount) {
+              targetSymbol = symbol;
+              fromSlotCount = count;
+              fromBoardCount = need;
+            }
+          }
+        });
+      }
+
+      if (!targetSymbol) {
+        setMessage("当前无法凑成 3 张消除，请先手动拿几张牌后再试。", "", true);
+        return;
+      }
+
+      // 需要时，从棋盘自动补齐同图案卡牌到槽位。
+      if (fromBoardCount > 0) {
+        const candidates = getClickableTiles().filter(t => t.symbol === targetSymbol).slice(0, fromBoardCount);
+        for (const t of candidates) {
+          t.removed = true;
+          slot.push({ symbol: t.symbol });
+        }
+      }
+
+      assistLeft--;
+      applyMatch();
+      setMessage(`帮助消除已生效：已消除 3 张「${targetSymbol}」。`, "", true);
+      renderSlot();
+      checkState();
+      renderBoard();
+    }
+
+    function startLevel(level) {
+      if (autoAdvanceTimer) {
+        clearTimeout(autoAdvanceTimer);
+        autoAdvanceTimer = null;
+      }
+      if (hintTimer) {
+        clearTimeout(hintTimer);
+        hintTimer = null;
+      }
+      currentLevel = Math.max(1, level);
+      state = "playing";
+      slot = [];
+      hintLeft = 1;
+      assistLeft = 1;
+      hintedTileIds.clear();
+      tiles = genLayout(currentLevel);
+      setMessage(`第 ${currentLevel} 关开始：先清上层，再拿下层。`, "");
+      renderSlot();
+      renderBoard();
+    }
+
+    function restartLevel() {
+      startLevel(currentLevel);
+    }
+
+    restartBtn.addEventListener("click", restartLevel);
+    hintBtn.addEventListener("click", useHint);
+    assistBtn.addEventListener("click", useAssistClear);
+    window.addEventListener("resize", () => {
+      if (state !== "playing") return;
+      // 仅在进行中时自适应尺寸，避免重开局。
+      const ratioX = boardEl.clientWidth / (boardEl.dataset.w ? Number(boardEl.dataset.w) : boardEl.clientWidth);
+      const ratioY = boardEl.clientHeight / (boardEl.dataset.h ? Number(boardEl.dataset.h) : boardEl.clientHeight);
+      if (Number.isFinite(ratioX) && Number.isFinite(ratioY)) {
+        for (const t of tiles) {
+          t.x = Math.max(6, Math.floor(t.x * ratioX));
+          t.y = Math.max(6, Math.floor(t.y * ratioY));
+          t.w = window.innerWidth <= 640 ? 54 : 62;
+          t.h = window.innerWidth <= 640 ? 68 : 76;
+        }
+      }
+      boardEl.dataset.w = String(boardEl.clientWidth);
+      boardEl.dataset.h = String(boardEl.clientHeight);
+      renderBoard();
+    });
+
+    // 初始化尺寸缓存
+    loadProgress();
+    currentLevel = 1;
+    boardEl.dataset.w = String(boardEl.clientWidth);
+    boardEl.dataset.h = String(boardEl.clientHeight);
+    startLevel(currentLevel);
+  </script>
+</body>
+</html>
