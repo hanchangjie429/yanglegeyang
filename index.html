@@ -61,7 +61,7 @@
       display: grid;
       grid-template-rows: auto 1fr auto;
       gap: 14px;
-      min-height: 100vh;
+      min-height: 100dvh;
       position: relative;
       z-index: 1;
     }
@@ -129,7 +129,7 @@
         linear-gradient(180deg, rgba(222, 242, 188, 0.88), rgba(185, 223, 154, 0.82));
       position: relative;
       overflow: hidden;
-      min-height: 420px;
+      min-height: clamp(320px, 52vh, 520px);
     }
 
     .board-wrap::before {
@@ -163,7 +163,7 @@
       position: relative;
       width: 100%;
       height: 100%;
-      min-height: 420px;
+      min-height: clamp(320px, 52vh, 520px);
       z-index: 2;
       background:
         radial-gradient(circle at 22% 22%, rgba(255, 255, 255, 0.2) 0 10%, transparent 11%),
@@ -337,13 +337,71 @@
     }
 
     @media (max-width: 640px) {
-      .app { padding: 10px; }
+      .app {
+        padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+        gap: 10px;
+      }
+      .header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+      .actions button {
+        flex: 1 1 30%;
+        min-width: 88px;
+        padding: 9px 8px;
+        font-size: 13px;
+      }
+      .level-info {
+        width: 100%;
+        text-align: center;
+      }
+      .status {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px 10px;
+        font-size: 13px;
+      }
+      .status .message {
+        grid-column: 1 / -1;
+      }
       .tile {
         width: 54px;
         height: 68px;
         font-size: 29px;
       }
-      .board, .board-wrap { min-height: 380px; }
+      .board, .board-wrap {
+        min-height: clamp(280px, 46vh, 420px);
+      }
+      .slot {
+        min-height: 84px;
+        padding: 8px;
+      }
+      .slot-tile {
+        width: 48px;
+        height: 58px;
+        font-size: 25px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      h1 {
+        font-size: clamp(18px, 6vw, 24px);
+      }
+      .actions button {
+        flex: 1 1 calc(50% - 6px);
+      }
+      .board, .board-wrap {
+        min-height: clamp(260px, 42vh, 360px);
+      }
+      .tile {
+        width: 46px;
+        height: 58px;
+        font-size: 24px;
+      }
     }
   </style>
 </head>
@@ -487,6 +545,12 @@
       return arr;
     }
 
+    function getTileSize() {
+      if (window.innerWidth <= 480) return { w: 46, h: 58 };
+      if (window.innerWidth <= 640) return { w: 54, h: 68 };
+      return { w: 62, h: 76 };
+    }
+
     function genDeck(tileCount, symbolPool) {
       const count = Math.floor(tileCount / MATCH_COUNT) * MATCH_COUNT;
       const deck = [];
@@ -505,8 +569,9 @@
       const cfg = buildLevelConfig(level);
       const boardWidth = boardEl.clientWidth;
       const boardHeight = boardEl.clientHeight;
-      const tileW = window.innerWidth <= 640 ? 54 : 62;
-      const tileH = window.innerWidth <= 640 ? 68 : 76;
+      const size = getTileSize();
+      const tileW = size.w;
+      const tileH = size.h;
       const layers = buildLayerCounts(cfg.tileTotal, cfg.layerCount);
       const deck = genDeck(layers.reduce((a, b) => a + b, 0), cfg.symbolPool);
       const list = [];
@@ -830,11 +895,12 @@
       const ratioX = boardEl.clientWidth / (boardEl.dataset.w ? Number(boardEl.dataset.w) : boardEl.clientWidth);
       const ratioY = boardEl.clientHeight / (boardEl.dataset.h ? Number(boardEl.dataset.h) : boardEl.clientHeight);
       if (Number.isFinite(ratioX) && Number.isFinite(ratioY)) {
+        const size = getTileSize();
         for (const t of tiles) {
           t.x = Math.max(6, Math.floor(t.x * ratioX));
           t.y = Math.max(6, Math.floor(t.y * ratioY));
-          t.w = window.innerWidth <= 640 ? 54 : 62;
-          t.h = window.innerWidth <= 640 ? 68 : 76;
+          t.w = size.w;
+          t.h = size.h;
         }
       }
       boardEl.dataset.w = String(boardEl.clientWidth);
