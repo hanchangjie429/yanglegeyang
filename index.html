@@ -374,7 +374,7 @@
         font-size: 29px;
       }
       .board, .board-wrap {
-        min-height: clamp(280px, 46vh, 420px);
+        min-height: clamp(320px, 52vh, 500px);
       }
       .slot {
         min-height: 84px;
@@ -395,7 +395,7 @@
         flex: 1 1 calc(50% - 6px);
       }
       .board, .board-wrap {
-        min-height: clamp(260px, 42vh, 360px);
+        min-height: clamp(300px, 48vh, 420px);
       }
       .tile {
         width: 46px;
@@ -525,10 +525,15 @@
 
     function buildLevelConfig(level) {
       const safeLevel = Math.max(1, level);
-      const tileTotal = Math.min(111, 36 + (safeLevel - 1) * 9);
-      const layerCount = Math.min(6, 3 + Math.floor((safeLevel - 1) / 2));
+      const isMobile = window.innerWidth <= 640;
+      const tileTotal = isMobile
+        ? Math.min(96, 30 + (safeLevel - 1) * 6)
+        : Math.min(111, 36 + (safeLevel - 1) * 9);
+      const layerCount = isMobile
+        ? Math.min(5, 3 + Math.floor((safeLevel - 1) / 3))
+        : Math.min(6, 3 + Math.floor((safeLevel - 1) / 2));
       const symbolPool = Math.min(SYMBOLS.length, 6 + Math.floor((safeLevel - 1) / 2));
-      const marginBase = Math.max(6, 16 - safeLevel);
+      const marginBase = isMobile ? Math.max(8, 18 - safeLevel) : Math.max(6, 16 - safeLevel);
       return { tileTotal, layerCount, symbolPool, marginBase };
     }
 
@@ -549,6 +554,41 @@
       if (window.innerWidth <= 480) return { w: 46, h: 58 };
       if (window.innerWidth <= 640) return { w: 54, h: 68 };
       return { w: 62, h: 76 };
+    }
+
+    function buildLayerPositions(count, boardWidth, boardHeight, tileW, tileH, margin) {
+      const stepX = Math.max(18, Math.floor(tileW * 0.8));
+      const stepY = Math.max(18, Math.floor(tileH * 0.78));
+      const maxX = Math.max(margin, boardWidth - tileW - margin);
+      const maxY = Math.max(margin, boardHeight - tileH - margin);
+      const jitterX = Math.max(2, Math.floor(stepX * 0.18));
+      const jitterY = Math.max(2, Math.floor(stepY * 0.18));
+      const positions = [];
+
+      for (let y = margin; y <= maxY; y += stepY) {
+        for (let x = margin; x <= maxX; x += stepX) {
+          const dx = Math.floor((Math.random() * (jitterX * 2 + 1)) - jitterX);
+          const dy = Math.floor((Math.random() * (jitterY * 2 + 1)) - jitterY);
+          positions.push({
+            x: Math.max(margin, Math.min(maxX, x + dx)),
+            y: Math.max(margin, Math.min(maxY, y + dy)),
+          });
+        }
+      }
+
+      for (let i = positions.length - 1; i > 0; i--) {
+        const r = Math.floor(Math.random() * (i + 1));
+        [positions[i], positions[r]] = [positions[r], positions[i]];
+      }
+
+      // 极端小屏兜底：可用网格位不足时补充随机点。
+      while (positions.length < count) {
+        positions.push({
+          x: Math.floor(Math.random() * (maxX - margin + 1)) + margin,
+          y: Math.floor(Math.random() * (maxY - margin + 1)) + margin,
+        });
+      }
+      return positions;
     }
 
     function genDeck(tileCount, symbolPool) {
@@ -579,17 +619,15 @@
       let idx = 0;
       for (let z = 0; z < layers.length; z++) {
         const n = layers[z];
+        const margin = cfg.marginBase + z * 4;
+        const positions = buildLayerPositions(n, boardWidth, boardHeight, tileW, tileH, margin);
         for (let i = 0; i < n; i++) {
-          const margin = cfg.marginBase + z * 4;
-          const maxX = Math.max(margin + 1, boardWidth - tileW - margin);
-          const maxY = Math.max(margin + 1, boardHeight - tileH - margin);
-          const x = Math.floor(Math.random() * (maxX - margin)) + margin;
-          const y = Math.floor(Math.random() * (maxY - margin)) + margin;
+          const pos = positions[i];
           list.push({
             id: `${z}-${i}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
             symbol: deck[idx++],
-            x,
-            y,
+            x: pos.x,
+            y: pos.y,
             z,
             w: tileW,
             h: tileH,
